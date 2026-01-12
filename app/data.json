@@ -1,0 +1,178 @@
+{
+    "header": "Vorratsschrank",
+    "settings": {
+        "showip": false,
+        "showlastupdate": true,
+        "weather": true,
+        "weather_forecast": false,
+        "tablemode": "items"
+    },
+    "keydata": [
+        "Nalas Gewicht 2,73 KG"
+    ],
+    "note": "Heute kochen wird was feines.",
+    "items": [
+        {
+            "id": "mk9mdzdwt4i5p0fn3fc",
+            "barcode": "20856090",
+            "name": "Bio Sonnenmais",
+            "expiryDate": "2029-07-01T00:00:00.000Z",
+            "addedDate": "2026-01-11T10:57:36.357Z",
+            "quantity": "1pcs",
+            "category": "Konserven"
+        },
+        {
+            "id": "mk9t24992umod7zwg7e",
+            "barcode": "8076809572569",
+            "name": "Pesto Vegan",
+            "expiryDate": "2026-08-18T00:00:00.000Z",
+            "addedDate": "2026-01-11T14:04:20.109Z",
+            "quantity": "195 g",
+            "category": "Konserven"
+        },
+        {
+            "id": "mk9wewfuwrc71aup2os",
+            "barcode": "4056489893660",
+            "name": "Peanut Satay Sauce",
+            "expiryDate": "2026-11-01T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:38:15.354Z",
+            "quantity": "185 g",
+            "category": "Sonstiges"
+        },
+        {
+            "id": "mk9wgf7uyl97mespkoe",
+            "barcode": "4337256603461",
+            "name": "H-Schlagsahne laktosefrei, 30 % Fett",
+            "expiryDate": "2026-03-28T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:39:26.346Z",
+            "quantity": "200g",
+            "category": "Milchprodukte"
+        },
+        {
+            "id": "mk9whj0yoxoni7tieym",
+            "barcode": "4337256429856",
+            "name": "Veganes lemon curd",
+            "expiryDate": "2026-04-23T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:40:17.938Z",
+            "quantity": "250g",
+            "category": "Konserven"
+        },
+        {
+            "id": "mk9wix8pji4427icoqf",
+            "barcode": "2009010337968",
+            "name": "Milch Mäuse DuoCreme Caramel",
+            "expiryDate": "2026-11-12T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:41:23.017Z",
+            "quantity": "200g",
+            "category": "Sonstiges"
+        },
+        {
+            "id": "mk9wju517e07n1yzjiy",
+            "barcode": "7622300103569",
+            "name": "Soße Miracel Whip",
+            "expiryDate": "2026-06-10T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:42:05.653Z",
+            "quantity": "500ml",
+            "category": "Milchprodukte"
+        },
+        {
+            "id": "mk9wna3yci9uyi4kork",
+            "barcode": "4056489152736",
+            "name": "Rote Beete",
+            "expiryDate": "2026-10-30T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:44:46.318Z",
+            "quantity": "500g",
+            "category": "Obst & Gemüse"
+        },
+        {
+            "id": "mk9wny2fs4x9qy2nvsl",
+            "barcode": "4335619105027",
+            "name": "Reis Konjak Reis",
+            "expiryDate": "2026-04-30T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:45:17.368Z",
+            "quantity": "270g",
+            "category": "Sonstiges"
+        },
+        {
+            "id": "mk9wp139m42x9jojxre",
+            "barcode": "4306188040521",
+            "name": "Salsa-Dip",
+            "expiryDate": "2026-09-16T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:46:07.941Z",
+            "quantity": "310g",
+            "category": "Konserven"
+        },
+        {
+            "id": "mk9wpzn1rgjwb9e7t7k",
+            "barcode": "4337256548700",
+            "name": "Feige aus Marokko Fruchtaufstrich",
+            "expiryDate": "2026-07-09T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:46:52.717Z",
+            "quantity": "250 g",
+            "category": "Konserven"
+        },
+        {
+            "id": "mk9ws220hy9swfjlubu",
+            "barcode": "42457657",
+            "name": "Salsa Käse im glas",
+            "expiryDate": "2026-02-14T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:48:29.160Z",
+            "quantity": "285g",
+            "category": "Konserven"
+        },
+        {
+            "id": "mk9wtd00jrlnt0yn8v",
+            "barcode": "20004132",
+            "name": "Gehackte Tomaten",
+            "expiryDate": "2026-07-31T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:49:30.000Z",
+            "quantity": "400g",
+            "category": "Konserven"
+        },
+        {
+            "id": "mk9wup90gi1a8230oj",
+            "barcode": "8690804326035",
+            "name": "Granatapfelsauce",
+            "expiryDate": "2026-05-01T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:50:32.532Z",
+            "quantity": "250ml",
+            "category": "Gewürze"
+        },
+        {
+            "id": "mk9ww7ky2l0oi1ytowu",
+            "barcode": "4260125367006",
+            "name": "Gemüsefond",
+            "expiryDate": "2026-02-06T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:51:42.946Z",
+            "quantity": "400ml",
+            "category": "Konserven"
+        },
+        {
+            "id": "mk9wx60m9ksncxos7k",
+            "barcode": "4056489210238",
+            "name": "Knoblauch eingelegt",
+            "expiryDate": "2026-08-01T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:52:27.574Z",
+            "quantity": "180g",
+            "category": "Obst & Gemüse"
+        },
+        {
+            "id": "mk9wy3kb0c6isbyvj36d",
+            "barcode": "4056489376194",
+            "name": "Konjac Noodles",
+            "expiryDate": "2026-04-30T00:00:00.000Z",
+            "addedDate": "2026-01-11T15:53:11.051Z",
+            "quantity": "270g",
+            "category": "Sonstiges"
+        },
+        {
+            "id": "mk9xwdcadpgfj2kbcgb",
+            "barcode": "4002359019944",
+            "name": "Uncle Bens Sauce",
+            "expiryDate": "2027-05-19T00:00:00.000Z",
+            "addedDate": "2026-01-11T16:19:50.026Z",
+            "quantity": "1pcs",
+            "category": "Konserven"
+        }
+    ]
+}
