@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vorratsschrank Manager</title>
+    <!-- Tailwind 4 CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        input[type="date"] {
+            color-scheme: light;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        /* Scanner Styling */
+        .scanner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .scanner-frame {
+            width: 80%;
+            max-width: 400px;
+            height: 300px;
+            position: relative;
+            border: 2px solid white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        #qr-reader {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .scanline {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: rgba(0, 255, 0, 0.7);
+            animation: scanline 2s linear infinite;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+            z-index: 10;
+        }
+        
+        @keyframes scanline {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-cabinet-filing mr-3"></i>Vorratsschrank
+            </h1>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left column: Add/scan items -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Scanner Section -->
+                <div class="bg-white rounded-xl shadow-lg p-5">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">
+                        <i class="fas fa-barcode mr-2"></i>Barcode Scanner
+                    </h2>
+                    
+                    <div class="mb-4">
+                        <button id="startScannerBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200">
+                            <i class="fas fa-camera mr-2"></i>Scanner starten
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        <p class="text-gray-600 text-sm">oder</p>
+                    </div>
+                    
+                    <div class="mt-2">
+                        <button id="manualEntryBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200">
+                            <i class="fas fa-keyboard mr-2"></i>Manuell eingeben
+                        </button>
+                    </div>
+                    
+                    <!-- Direkte Barcode-Eingabe -->
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-700 mb-3">Direkte Barcode-Eingabe</h3>
+                        <div class="flex space-x-2">
+                            <input type="text" id="directBarcodeInput" 
+                                   placeholder="Barcode eingeben" 
+                                   class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <button id="searchBarcodeBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Add Item Form -->
+                <div id="addItemForm" class="bg-white rounded-xl shadow-lg p-5">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">
+                        <i class="fas fa-plus-circle mr-2"></i>Produkt hinzufügen
+                    </h2>
+                
+                    <!-- Tabs -->
+                    <div class="mb-4">
+                        <div class="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                            <button id="addTabProduct" type="button"
+                                    class="flex-1 px-3 py-2 rounded-md text-sm font-medium bg-white text-gray-900 shadow">
+                                Produkt
+                            </button>
+                            <button id="addTabNote" type="button"
+                                    class="flex-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900">
+                                Einstellungen
+                            </button>
+                        </div>
+                    </div>
+                
+                    <!-- Panels -->
+                    <div id="addPanelProduct" class="space-y-4">
+                        <div>
+                            <label for="barcode" class="block text-sm font-medium text-gray-700 mb-1">
+                                Barcode <span class="text-gray-500">(optional)</span>
+                            </label>
+                            <input type="text" id="barcode" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                
+                        <div>
+                            <label for="productName" class="block text-sm font-medium text-gray-700 mb-1">
+                                Produktname *
+                            </label>
+                            <input type="text" id="productName" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="z.B. Milch, Eier, Käse">
+                        </div>
+                
+                        <div>
+                            <label for="expiryDate" class="block text-sm font-medium text-gray-700 mb-1">
+                                Ablaufdatum *
+                            </label>
+                            <input type="date" id="expiryDate" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                
+                        <div>
+                            <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">
+                                Menge <span class="text-gray-500">(optional)</span>
+                            </label>
+                            <input type="text" id="quantity" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="z.B. 1 Packung, 500ml">
+                        </div>
+                
+                        <div>
+                            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
+                                Kategorie <span class="text-gray-500">(optional)</span>
+                            </label>
+                            <select id="category" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Bitte wählen</option>
+                                <option value="Milchprodukte">Milchprodukte</option>
+                                <option value="Getränke">Getränke</option>
+                                <option value="Trockenware">Trockenware</option>
+                                <option value="Konserven">Konserven</option>
+                                <option value="Obst & Gemüse">Obst & Gemüse</option>
+                                <option value="Fleisch & Fisch">Fleisch & Fisch</option>
+                                <option value="Tiefkühl">Tiefkühl</option>
+                                <option value="Gewürze">Gewürze</option>
+                                <option value="Sonstiges">Sonstiges</option>
+                            </select>
+                        </div>
+                
+                        <div class="pt-2">
+                            <button id="saveItemBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200">
+                                <i class="fas fa-save mr-2"></i>Produkt speichern
+                            </button>
+                        </div>
+                    </div>
+                
+                    <div id="addPanelNote" class="space-y-4 hidden">
+                        <div>
+                            <label for="header" class="block text-sm font-medium text-gray-700 mb-1">
+                                Überschrift
+                            </label>
+                            <input type="text" id="header" maxlength="40"
+                                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="z.B. Küche">
+                        </div>
+                
+                        <div>
+                            <label for="note" class="block text-sm font-medium text-gray-700 mb-1">
+                                Notiz
+                            </label>
+                            <textarea id="note" rows="6"
+                                      class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="z.B. Einkaufsnotizen, was bald nachgekauft werden muss..."></textarea>
+                        </div>
+                        
+                        <div class="pt-3 border-t border-gray-200 space-y-3">
+                            <div class="text-sm font-medium text-gray-700">
+                                Keydata
+                            </div>
+                        
+                            <div class="grid grid-cols-1 gap-3">
+                                <input id="keydata1" type="text" maxlength="60"
+                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="...">
+                                <input id="keydata2" type="text" maxlength="60"
+                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="...">
+                                <input id="keydata3" type="text" maxlength="60"
+                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="...">
+                                <input id="keydata4" type="text" maxlength="60"
+                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="...">
+                            </div>
+                        </div>
+                        
+                        <div class="pt-3">
+                            <label for="tablemode" class="block text-sm font-medium text-gray-700 mb-1">
+                                Ansicht
+                            </label>
+                            <select id="tablemode"
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Nichts anzeigen</option>
+                                <option value="items">Einträge</option>
+                                <option value="appointments">Termine</option>
+                            </select>
+                        </div>
+                        
+                        <div class="space-y-3 pt-2 border-t border-gray-200">
+                            <label class="flex items-center gap-3 select-none">
+                                <input id="showip" type="checkbox" class="h-4 w-4 rounded border-gray-300">
+                                <span class="text-sm text-gray-700">IP anzeigen</span>
+                            </label>
+                        
+                            <label class="flex items-center gap-3 select-none">
+                                <input id="showlastupdate" type="checkbox" class="h-4 w-4 rounded border-gray-300" checked>
+                                <span class="text-sm text-gray-700">Letztes Update anzeigen</span>
+                            </label>
+                        
+                            <label class="flex items-center gap-3 select-none">
+                                <input id="weather" type="checkbox" class="h-4 w-4 rounded border-gray-300" checked>
+                                <span class="text-sm text-gray-700">Wetter anzeigen</span>
+                            </label>
+                        
+                            <label class="flex items-center gap-3 select-none">
+                                <input id="weather_forecast" type="checkbox" class="h-4 w-4 rounded border-gray-300">
+                                <span class="text-sm text-gray-700">Wettervorhersage anzeigen</span>
+                            </label>
+                        </div>
+                
+                        <div class="text-xs text-gray-500">
+                            Wird automatisch gespeichert.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <!-- Right column: Item list -->
+            <div class="lg:col-span-2">
+                <!-- Search and filter -->
+                <div class="bg-white rounded-xl shadow-lg p-5 mb-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex-1">
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                <input type="text" id="searchInput" placeholder="Produkte suchen..." class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center">
+                                <label for="sortBy" class="text-sm font-medium text-gray-700 mr-2">Sortieren:</label>
+                                <select id="sortBy" class="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="expiry">Ablaufdatum (nah zu fern)</option>
+                                    <option value="expiry-desc">Ablaufdatum (fern zu nah)</option>
+                                    <option value="name">Name (A-Z)</option>
+                                    <option value="name-desc">Name (Z-A)</option>
+                                    <option value="added">Hinzugefügt (neueste)</option>
+                                    <option value="added-desc">Hinzugefügt (älteste)</option>
+                                </select>
+                            </div>
+                            
+                            <button id="clearSearchBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition duration-200">
+                                <i class="fas fa-times mr-1"></i> Filter löschen
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <button class="filter-btn px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium" data-filter="all">Alle</button>
+                        <button class="filter-btn px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium" data-filter="expiring">Bald ablaufend</button>
+                        <button class="filter-btn px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium" data-filter="expired">Abgelaufen</button>
+                        <button class="filter-btn px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium" data-filter="category-Milchprodukte">Milchprodukte</button>
+                        <button class="filter-btn px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium" data-filter="category-Getränke">Getränke</button>
+                    </div>
+                </div>
+                
+                <!-- Items list -->
+                <div class="bg-white rounded-xl shadow-lg p-5">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">
+                            <i class="fas fa-list mr-2"></i>Gespeicherte Produkte
+                            <span id="itemCount" class="ml-2 bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">0</span>
+                        </h2>
+                        <button id="exportBtn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-200">
+                            <i class="fas fa-download mr-2"></i>Exportieren
+                        </button>
+                    </div>
+                    
+                    <div id="itemsList" class="space-y-4">
+                        <!-- Items will be loaded here -->
+                        <div id="emptyState" class="text-center py-12">
+                            <i class="fas fa-box-open text-4xl text-gray-300 mb-4"></i>
+                            <h3 class="text-xl font-medium text-gray-500 mb-2">Noch keine Produkte</h3>
+                            <p class="text-gray-400">Füge deine ersten Produkte über den Scanner oder manuell hinzu.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Expiring soon warning -->
+                    <div id="expiringWarning" class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg hidden">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle text-yellow-600 text-xl mr-3"></i>
+                            <div>
+                                <h4 class="font-bold text-yellow-800">Achtung!</h4>
+                                <p class="text-yellow-700 text-sm" id="expiringCountText">Einige Produkte laufen bald ab.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Statistics -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-xl shadow p-4">
+                        <div class="flex items-center">
+                            <div class="p-3 bg-blue-100 rounded-lg mr-4">
+                                <i class="fas fa-box text-blue-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">Gesamt</p>
+                                <p class="text-2xl font-bold text-gray-800" id="totalCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow p-4">
+                        <div class="flex items-center">
+                            <div class="p-3 bg-yellow-100 rounded-lg mr-4">
+                                <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">Bald ablaufend</p>
+                                <p class="text-2xl font-bold text-gray-800" id="expiringSoonCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow p-4">
+                        <div class="flex items-center">
+                            <div class="p-3 bg-red-100 rounded-lg mr-4">
+                                <i class="fas fa-exclamation-circle text-red-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">Abgelaufen</p>
+                                <p class="text-2xl font-bold text-gray-800" id="expiredCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            <p>Verwaltet mit ❤️. Daten werden serverseitig in Home Assistant gespeichert.</p>
+            <p class="mt-1">Produktdaten von <a href="https://world.openfoodfacts.org/" class="text-blue-600 hover:underline" target="_blank">Open Food Facts</a></p>
+        </footer>
+    </div>
+    
+    <!-- Scanner Overlay -->
+    <div id="scannerOverlay" class="scanner-overlay">
+        <div class="scanner-frame">
+            <div id="qr-reader"></div>
+            <div class="scanline"></div>
+        </div>
+        <div class="mt-6 flex space-x-4">
+            <button id="stopScannerBtn" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg">
+                <i class="fas fa-stop mr-2"></i>Scanner beenden
+            </button>
+            <button id="toggleCameraBtn" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg">
+                <i class="fas fa-sync-alt mr-2"></i>Kamera wechseln
+            </button>
+        </div>
+        <p class="mt-4 text-white text-sm">Richte die Kamera auf einen Barcode</p>
+    </div>
+    
+    <!-- Modal for product lookup -->
+    <div id="productLookupModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Produkt wird gesucht</h3>
+                    <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                
+                <div id="modalContent" class="py-4">
+                    <div class="text-center">
+                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mb-4"></div>
+                        <p class="text-gray-700">Suche Produktinformationen bei Open Food Facts...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    
+    <script>
+        // Initial data structure
+        let items = [];
+        let scanner = null;
+        let currentCameraId = null;
+        let cameras = [];
+        
+        // DOM elements
+        const startScannerBtn = document.getElementById('startScannerBtn');
+        const scannerOverlay = document.getElementById('scannerOverlay');
+        const stopScannerBtn = document.getElementById('stopScannerBtn');
+        const toggleCameraBtn = document.getElementById('toggleCameraBtn');
+        const manualEntryBtn = document.getElementById('manualEntryBtn');
+        const saveItemBtn = document.getElementById('saveItemBtn');
+        const searchInput = document.getElementById('searchInput');
+        const sortBy = document.getElementById('sortBy');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const itemsList = document.getElementById('itemsList');
+        const emptyState = document.getElementById('emptyState');
+        const itemCount = document.getElementById('itemCount');
+        const totalCount = document.getElementById('totalCount');
+        const expiringSoonCount = document.getElementById('expiringSoonCount');
+        const expiredCount = document.getElementById('expiredCount');
+        const exportBtn = document.getElementById('exportBtn');
+        const productLookupModal = document.getElementById('productLookupModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalContent = document.getElementById('modalContent');
+        const expiringWarning = document.getElementById('expiringWarning');
+        const expiringCountText = document.getElementById('expiringCountText');
+        const directBarcodeInput = document.getElementById('directBarcodeInput');
+        const searchBarcodeBtn = document.getElementById('searchBarcodeBtn');
+        
+        // Form fields
+        const barcodeInput = document.getElementById('barcode');
+        const productNameInput = document.getElementById('productName');
+        const expiryDateInput = document.getElementById('expiryDate');
+        const quantityInput = document.getElementById('quantity');
+        const categoryInput = document.getElementById('category');
+        
+        //Tabs
+        const addTabProduct = document.getElementById('addTabProduct');
+        const addTabNote = document.getElementById('addTabNote');
+        const addPanelProduct = document.getElementById('addPanelProduct');
+        const addPanelNote = document.getElementById('addPanelNote');
+        
+        //Settings
+        const headerInput = document.getElementById('header');
+        const noteInput = document.getElementById('note');
+        const showipInput = document.getElementById('showip');
+        const showlastupdateInput = document.getElementById('showlastupdate');
+        const weatherInput = document.getElementById('weather');
+        const weatherForecastInput = document.getElementById('weather_forecast');
+        const tablemodeInput = document.getElementById('tablemode');
+        
+        //Keydata
+        const keydata1Input = document.getElementById('keydata1');
+        const keydata2Input = document.getElementById('keydata2');
+        const keydata3Input = document.getElementById('keydata3');
+        const keydata4Input = document.getElementById('keydata4');
+        
+        const keydataInputs = [keydata1Input, keydata2Input, keydata3Input, keydata4Input];
+        
+        // Set default date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        expiryDateInput.valueAsDate = tomorrow;
+        
+        // ========== SERVER-SIDE STORAGE FUNCTIONS ==========
+        
+        // Home Assistant API Configuration
+        const HA_BASE_URL = "https://homeassistant.local";//muss eine https Adresse sein
+        const HA_TOKEN = 'INSERTTOKEN'; // Ersetzen mit deinem Token!
+        
+        const VORRATSCHRANK_API = 'http://192.168.0.2:5000';//old an Homeassistant anpassen
+        
+        // Generate unique ID
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+        
+        function setAddTab(tab) {
+            const isProduct = tab === 'product';
+        
+            if (addPanelProduct) addPanelProduct.classList.toggle('hidden', !isProduct);
+            if (addPanelNote) addPanelNote.classList.toggle('hidden', isProduct);
+        
+            if (addTabProduct) {
+                addTabProduct.classList.toggle('bg-white', isProduct);
+                addTabProduct.classList.toggle('text-gray-900', isProduct);
+                addTabProduct.classList.toggle('shadow', isProduct);
+                addTabProduct.classList.toggle('text-gray-700', !isProduct);
+            }
+        
+            if (addTabNote) {
+                addTabNote.classList.toggle('bg-white', !isProduct);
+                addTabNote.classList.toggle('text-gray-900', !isProduct);
+                addTabNote.classList.toggle('shadow', !isProduct);
+                addTabNote.classList.toggle('text-gray-700', isProduct);
+            }
+        
+            if (!isProduct) {
+                if (headerInput) headerInput.focus();
+                else if (noteInput) noteInput.focus();
+            } else {
+                if (productNameInput) productNameInput.focus();
+            }
+        }
+        
+        // Load items from server
+        async function loadItems() {
+            try {
+                console.log('Lade Produkte...');
+        
+                const response = await fetch('./data.json');
+        
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        items = [];
+                        if (noteInput) noteInput.value = '';
+                        updateDisplay();
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+        
+                const jsonData = await response.json();
+        
+                let rawItems = [];
+                let rawNote = '';
+                let rawHeader = '';
+                let rawShowip = false;
+                let rawShowlastupdate = true;
+                let rawWeather = true;
+                let rawWeatherForecast = false;
+                let rawTablemode = '';
+                let rawKeydata = ['', '', '', ''];
+        
+                if (Array.isArray(jsonData)) {
+                    rawItems = jsonData;
+                } else if (jsonData && typeof jsonData === 'object') {
+                    rawHeader = String(jsonData.header || '');
+                    rawNote = String(jsonData.note || '');
+                    rawItems = Array.isArray(jsonData.items) ? jsonData.items : [];
+                
+                    const s = (jsonData.settings && typeof jsonData.settings === 'object') ? jsonData.settings : {};
+                    
+                    rawTablemode = (s.tablemode === 'items' || s.tablemode === 'appointments') ? s.tablemode : '';
+                    rawShowip = Boolean(s.showip);
+                    rawShowlastupdate = (typeof s.showlastupdate === 'boolean') ? s.showlastupdate : true;
+                    rawWeather = (typeof s.weather === 'boolean') ? s.weather : true;
+                    rawWeatherForecast = Boolean(s.weather_forecast);
+                    
+                    const kd = Array.isArray(jsonData.keydata) ? jsonData.keydata : [];
+                    rawKeydata = [0, 1, 2, 3].map(i => {
+                        const v = kd[i];
+                        return (v === null || typeof v === 'undefined') ? '' : String(v).slice(0, 60);
+                    });
+                }
+                
+                if (headerInput) headerInput.value = rawHeader;
+                if (noteInput) noteInput.value = rawNote;
+                
+                if (showipInput) showipInput.checked = rawShowip;
+                if (showlastupdateInput) showlastupdateInput.checked = rawShowlastupdate;
+                if (weatherInput) weatherInput.checked = rawWeather;
+                if (weatherForecastInput) weatherForecastInput.checked = rawWeatherForecast;
+                if (tablemodeInput) tablemodeInput.value = rawTablemode;
+                keydataInputs.forEach((el, i) => {
+                    if (el) el.value = String(rawKeydata[i] || '').slice(0, 60);
+                });
+        
+                items = rawItems.map(item => ({
+                    ...item,
+                    expiryDate: new Date(item.expiryDate),
+                    addedDate: new Date(item.addedDate || new Date())
+                }));
+        
+                console.log(`${items.length} Produkte geladen`);
+                updateDisplay();
+        
+            } catch (error) {
+                console.error('Laden fehlgeschlagen:', error);
+                items = [];
+                if (noteInput) noteInput.value = '';
+                updateDisplay();
+            }
+        }
+        
+        // Save items to server
+        async function saveItemsToServer() {
+            try {
+                // Konvertiere Date-Objekte zu ISO-Strings
+                const itemsToSave = items.map(item => ({
+                    ...item,
+                    expiryDate: item.expiryDate.toISOString(),
+                    addedDate: item.addedDate.toISOString()
+                }));
+                
+                const response = await fetch(`${HA_BASE_URL}/api/services/rest_command/pantry_save`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${HA_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(itemsToSave)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Speichern fehlgeschlagen: ${response.status}`);
+                }
+                
+                console.log('Speichern erfolgreich');
+                return { success: true };
+                
+            } catch (error) {
+                console.error('Speichern fehlgeschlagen:', error);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // Delete item from server
+        async function deleteItemFromServer(itemId) {
+            try {
+                const response = await fetch(`${HA_BASE_URL}/api/services/rest_command/pantry_delete`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${HA_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: itemId })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Löschen fehlgeschlagen: ${response.status}`);
+                }
+                
+                console.log('Löschen erfolgreich');
+                return { success: true };
+                
+            } catch (error) {
+                console.error('Löschen fehlgeschlagen:', error);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // ========== MAIN CRUD FUNCTIONS ==========
+        
+        async function saveAllItems() {
+            try {
+                const itemsToSave = items.map(item => ({
+                    id: String(item.id),
+                    barcode: String(item.barcode || ''),
+                    name: String(item.name),
+                    expiryDate: item.expiryDate.toISOString(),
+                    addedDate: item.addedDate.toISOString(),
+                    quantity: String(item.quantity || ''),
+                    category: String(item.category || '')
+                }));
+                
+                const keydataToSave = keydataInputs
+                    .map(el => String((el && el.value) ? el.value : '').slice(0, 60).trim())
+                    .filter(v => v.length > 0);
+        
+                const payloadToSave = {
+                    header: String((headerInput && headerInput.value) ? headerInput.value.slice(0, 40) : ''),
+                    settings: {
+                        showip: Boolean(showipInput && showipInput.checked),
+                        showlastupdate: (showlastupdateInput ? Boolean(showlastupdateInput.checked) : true),
+                        weather: (weatherInput ? Boolean(weatherInput.checked) : true),
+                        weather_forecast: Boolean(weatherForecastInput && weatherForecastInput.checked),
+                        tablemode: (tablemodeInput && tablemodeInput.value) ? tablemodeInput.value : ''
+                    },
+                    keydata: keydataToSave,
+                    note: String((noteInput && noteInput.value) ? noteInput.value : ''),
+                    items: itemsToSave
+                };
+        
+                const response = await fetch(`${HA_BASE_URL}/api/services/rest_command/pantry_save`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${HA_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ data: payloadToSave })
+                });
+        
+                if (!response.ok) throw new Error(`Speichern fehlgeschlagen: ${response.status}`);
+        
+                console.log('Gespeichert');
+                return { success: true };
+        
+            } catch (error) {
+                console.error('Fehler:', error);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // Item hinzufügen
+        async function saveItem() {
+            if (!productNameInput.value.trim() || !expiryDateInput.value) {
+                showMessage('Bitte Produktname und Ablaufdatum ausfüllen.', 'error');
+                return;
+            }
+            
+            const newItem = {
+                id: generateId(),
+                barcode: barcodeInput.value.trim(),
+                name: productNameInput.value.trim(),
+                expiryDate: new Date(expiryDateInput.value),
+                addedDate: new Date(),
+                quantity: quantityInput.value.trim(),
+                category: categoryInput.value
+            };
+            
+            // Lokal hinzufügen
+            items.push(newItem);
+            
+            // ALLE Items speichern
+            const result = await saveAllItems();
+            
+            if (result.success) {
+                updateDisplay();
+                
+                // Formular leeren
+                barcodeInput.value = '';
+                productNameInput.value = '';
+                quantityInput.value = '';
+                categoryInput.value = '';
+                directBarcodeInput.value = '';
+                
+                // Datum auf morgen
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                expiryDateInput.valueAsDate = tomorrow;
+                
+                showMessage('Produkt gespeichert!', 'success');
+            } else {
+                // Rückgängig machen
+                items.pop();
+                showMessage('Speichern fehlgeschlagen: ' + result.error, 'error');
+            }
+        }
+        
+        async function deleteItem(id) {
+            if (!confirm('Produkt wirklich löschen?')) {
+                return;
+            }
+            
+            // Lokal entfernen
+            items = items.filter(item => item.id !== id);
+            
+            // ALLE Items speichern
+            const result = await saveAllItems();
+            
+            if (result.success) {
+                updateDisplay();
+                showMessage('Produkt gelöscht.', 'info');
+            } else {
+                // Wieder laden bei Fehler
+                await loadItems();
+                showMessage('Löschen fehlgeschlagen.', 'error');
+            }
+        }
+        
+        // ========== SCANNER FUNCTIONS (UNVERÄNDERT) ==========
+        
+        async function startScanner() {
+            try {
+                scannerOverlay.style.display = 'flex';
+                cameras = await Html5Qrcode.getCameras();
+                
+                if (cameras && cameras.length > 0) {
+                    currentCameraId = cameras[0].id;
+                    scanner = new Html5Qrcode("qr-reader");
+                    
+                    const config = {
+                        fps: 10,
+                        qrbox: { width: 250, height: 150 },
+                        aspectRatio: 1.0
+                    };
+                    
+                    await scanner.start(
+                        currentCameraId,
+                        config,
+                        onScanSuccess,
+                        onScanError
+                    );
+                    
+                    showMessage('Scanner gestartet. Richte die Kamera auf einen Barcode.', 'success');
+                } else {
+                    throw new Error('Keine Kamera gefunden');
+                }
+            } catch (error) {
+                console.error('Scanner Fehler:', error);
+                scannerOverlay.style.display = 'none';
+                
+                if (error.message.includes('NotAllowedError') || error.message.includes('Permission')) {
+                    showMessage('Kamera-Zugriff wurde verweigert.', 'error');
+                } else if (error.message.includes('NotFoundError')) {
+                    showMessage('Keine Kamera gefunden.', 'error');
+                } else {
+                    showMessage(`Scanner Fehler: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function stopScanner() {
+            try {
+                if (scanner && scanner.isScanning) {
+                    await scanner.stop();
+                }
+                scannerOverlay.style.display = 'none';
+                scanner = null;
+            } catch (error) {
+                console.error('Error stopping scanner:', error);
+            }
+        }
+        
+        async function toggleCamera() {
+            if (!cameras || cameras.length < 2) {
+                showMessage('Nur eine Kamera verfügbar', 'info');
+                return;
+            }
+            
+            try {
+                const currentIndex = cameras.findIndex(cam => cam.id === currentCameraId);
+                const nextIndex = (currentIndex + 1) % cameras.length;
+                const nextCameraId = cameras[nextIndex].id;
+                
+                if (scanner && scanner.isScanning) {
+                    await scanner.stop();
+                }
+                
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 150 },
+                    aspectRatio: 1.0
+                };
+                
+                await scanner.start(
+                    nextCameraId,
+                    config,
+                    onScanSuccess,
+                    onScanError
+                );
+                
+                currentCameraId = nextCameraId;
+                showMessage(`Kamera gewechselt`, 'success');
+            } catch (error) {
+                console.error('Error switching camera:', error);
+                showMessage('Fehler beim Kamerawechsel', 'error');
+            }
+        }
+        
+        async function onScanSuccess(decodedText) {
+            console.log("Scanned barcode:", decodedText);
+            await stopScanner();
+            showProductLookupModal();
+            
+            try {
+                const productData = await lookupProduct(decodedText);
+                barcodeInput.value = decodedText;
+                productNameInput.value = productData.name || '';
+                
+                if (productData.category) {
+                    const categoryLower = productData.category.toLowerCase();
+                    const categoryOption = Array.from(categoryInput.options).find(opt => 
+                        opt.value.toLowerCase().includes(categoryLower) || 
+                        categoryLower.includes(opt.value.toLowerCase())
+                    );
+                    categoryInput.value = categoryOption ? categoryOption.value : 'Sonstiges';
+                }
+                
+                if (productData.quantity) {
+                    quantityInput.value = productData.quantity;
+                }
+                
+                hideProductLookupModal();
+                expiryDateInput.focus();
+                showMessage('Produkt erfolgreich gescannt!', 'success');
+                
+            } catch (error) {
+                console.error("Error looking up product:", error);
+                
+                modalContent.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle text-4xl text-yellow-500 mb-4"></i>
+                        <p class="text-gray-700 mb-2">${error.message || 'Produkt nicht gefunden'}</p>
+                        <p class="text-gray-600 text-sm mb-4">Barcode: ${decodedText}</p>
+                        <p class="text-gray-600 text-sm mb-4">Sie können die Details manuell eingeben.</p>
+                        <button id="manualFillBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                            Manuell eingeben
+                        </button>
+                    </div>
+                `;
+                
+                document.getElementById('manualFillBtn').addEventListener('click', () => {
+                    barcodeInput.value = decodedText;
+                    hideProductLookupModal();
+                    productNameInput.focus();
+                    showMessage('Bitte Produktdetails manuell ergänzen', 'info');
+                });
+            }
+        }
+        
+        function onScanError(error) {
+            console.debug("Scan error:", error);
+        }
+        
+        async function lookupProduct(barcode) {
+            const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
+            
+            console.log("Fetching from:", apiUrl);
+            
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`API-Fehler: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 1 && data.product) {
+                    const product = data.product;
+                    
+                    let productName = product.product_name || 
+                                     product.product_name_de || 
+                                     product.product_name_fr || 
+                                     product.product_name_en || 
+                                     '';
+                    
+                    let category = '';
+                    if (product.categories_hierarchy && product.categories_hierarchy.length > 0) {
+                        const rawCategory = product.categories_hierarchy[0];
+                        category = rawCategory.replace(/^[a-z]{2,3}:/, '').replace(/-/g, ' ');
+                    } else if (product.categories) {
+                        category = product.categories.split(',')[0].trim();
+                    }
+                    
+                    let quantity = product.quantity || product.product_quantity || '';
+                    
+                    return {
+                        name: productName,
+                        category: category,
+                        quantity: quantity,
+                        imageUrl: product.image_url || product.image_front_small_url || ''
+                    };
+                } else {
+                    throw new Error('Produkt nicht in der Open Food Facts Datenbank gefunden.');
+                }
+            } catch (error) {
+                console.error("API Fehler:", error);
+                throw new Error(`Produktsuche fehlgeschlagen: ${error.message}`);
+            }
+        }
+        
+        async function searchBarcodeManually() {
+            const barcode = directBarcodeInput.value.trim();
+            if (!barcode) {
+                showMessage('Bitte einen Barcode eingeben', 'error');
+                return;
+            }
+            
+            showProductLookupModal();
+            
+            try {
+                const productData = await lookupProduct(barcode);
+                barcodeInput.value = barcode;
+                productNameInput.value = productData.name || '';
+                
+                if (productData.category) {
+                    const categoryLower = productData.category.toLowerCase();
+                    const categoryOption = Array.from(categoryInput.options).find(opt => 
+                        opt.value.toLowerCase().includes(categoryLower) || 
+                        categoryLower.includes(opt.value.toLowerCase())
+                    );
+                    categoryInput.value = categoryOption ? categoryOption.value : 'Sonstiges';
+                }
+                
+                if (productData.quantity) {
+                    quantityInput.value = productData.quantity;
+                }
+                
+                hideProductLookupModal();
+                expiryDateInput.focus();
+                showMessage('Produkt gefunden!', 'success');
+                
+            } catch (error) {
+                console.error("Error looking up product:", error);
+                
+                modalContent.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle text-4xl text-yellow-500 mb-4"></i>
+                        <p class="text-gray-700 mb-2">${error.message}</p>
+                        <p class="text-gray-600 text-sm mb-4">Barcode: ${barcode}</p>
+                        <button id="manualFillBtn2" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                            Manuell eingeben
+                        </button>
+                    </div>
+                `;
+                
+                document.getElementById('manualFillBtn2').addEventListener('click', () => {
+                    barcodeInput.value = barcode;
+                    hideProductLookupModal();
+                    productNameInput.focus();
+                });
+            }
+        }
+        
+        function showProductLookupModal() {
+            modalContent.innerHTML = `
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mb-4"></div>
+                    <p class="text-gray-700">Suche Produktinformationen bei Open Food Facts...</p>
+                </div>
+            `;
+            productLookupModal.classList.remove('hidden');
+        }
+        
+        function hideProductLookupModal() {
+            productLookupModal.classList.add('hidden');
+        }
+        
+        function handleManualEntry() {
+            barcodeInput.value = '';
+            productNameInput.value = '';
+            quantityInput.value = '';
+            categoryInput.value = '';
+            directBarcodeInput.value = '';
+            
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            expiryDateInput.valueAsDate = tomorrow;
+            
+            productNameInput.focus();
+            showMessage('Manuelle Eingabe aktiv.', 'info');
+        }
+        
+        // ========== UI FUNCTIONS ==========
+        
+        function updateDisplay() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const sortValue = sortBy.value;
+            const activeFilter = document.querySelector('.filter-btn.bg-blue-100')?.dataset.filter || 'all';
+            
+            // Filter items
+            let filteredItems = [...items];
+            
+            // Apply search filter
+            if (searchTerm) {
+                filteredItems = filteredItems.filter(item => 
+                    item.name.toLowerCase().includes(searchTerm) ||
+                    (item.barcode && item.barcode.includes(searchTerm)) ||
+                    (item.category && item.category.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Apply category/status filter
+            if (activeFilter === 'expiring') {
+                const today = new Date();
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
+                
+                filteredItems = filteredItems.filter(item => 
+                    item.expiryDate > today && item.expiryDate <= nextWeek
+                );
+            } else if (activeFilter === 'expired') {
+                const today = new Date();
+                filteredItems = filteredItems.filter(item => item.expiryDate < today);
+            } else if (activeFilter.startsWith('category-')) {
+                const category = activeFilter.split('-')[1];
+                filteredItems = filteredItems.filter(item => item.category === category);
+            }
+            
+            // Sort items
+            filteredItems.sort((a, b) => {
+                switch(sortValue) {
+                    case 'expiry':
+                        return a.expiryDate - b.expiryDate;
+                    case 'expiry-desc':
+                        return b.expiryDate - a.expiryDate;
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    case 'name-desc':
+                        return b.name.localeCompare(a.name);
+                    case 'added':
+                        return b.addedDate - a.addedDate;
+                    case 'added-desc':
+                        return a.addedDate - b.addedDate;
+                    default:
+                        return a.expiryDate - b.expiryDate;
+                }
+            });
+            
+            // Update counts
+            itemCount.textContent = filteredItems.length;
+            totalCount.textContent = items.length;
+            
+            // Calculate expiring and expired counts
+            const today = new Date();
+            const nextWeek = new Date();
+            nextWeek.setDate(today.getDate() + 7);
+            
+            const expiringSoon = items.filter(item => 
+                item.expiryDate > today && item.expiryDate <= nextWeek
+            ).length;
+            
+            const expired = items.filter(item => item.expiryDate < today).length;
+            
+            expiringSoonCount.textContent = expiringSoon;
+            expiredCount.textContent = expired;
+            
+            // Show/hide expiring warning
+            if (expiringSoon > 0) {
+                expiringWarning.classList.remove('hidden');
+                expiringCountText.textContent = `${expiringSoon} Produkt(e) laufen in den nächsten 7 Tagen ab.`;
+            } else {
+                expiringWarning.classList.add('hidden');
+            }
+            
+            // Update items list
+            if (filteredItems.length === 0) {
+                emptyState.classList.remove('hidden');
+                itemsList.innerHTML = '';
+                itemsList.appendChild(emptyState);
+            } else {
+                emptyState.classList.add('hidden');
+                
+                const itemsHTML = filteredItems.map(item => {
+                    const today = new Date();
+                    const expiryDate = item.expiryDate;
+                    const timeDiff = expiryDate.getTime() - today.getTime();
+                    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                    
+                    let statusClass = 'bg-gray-100 text-gray-800';
+                    let statusText = `${daysDiff} Tage`;
+                    
+                    if (daysDiff < 0) {
+                        statusClass = 'bg-red-100 text-red-800';
+                        statusText = `Abgelaufen vor ${Math.abs(daysDiff)} Tagen`;
+                    } else if (daysDiff === 0) {
+                        statusClass = 'bg-red-100 text-red-800';
+                        statusText = 'Heute ablaufend';
+                    } else if (daysDiff <= 7) {
+                        statusClass = 'bg-yellow-100 text-yellow-800';
+                        statusText = `${daysDiff} Tage`;
+                    } else if (daysDiff <= 30) {
+                        statusClass = 'bg-green-100 text-green-800';
+                    }
+                    
+                    const addedDateFormatted = item.addedDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const expiryDateFormatted = expiryDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    
+                    return `
+                        <div class="fade-in bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition duration-200">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between">
+                                <div class="mb-3 md:mb-0 md:flex-1">
+                                    <div class="flex items-start">
+                                        <div class="mr-4 mt-1">
+                                            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                                <i class="fas fa-box text-blue-600"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold text-lg text-gray-800">${item.name}</h3>
+                                            <div class="flex flex-wrap gap-2 mt-2">
+                                                <span class="px-3 py-1 ${statusClass} rounded-full text-sm font-medium">
+                                                    <i class="far fa-calendar-alt mr-1"></i>${statusText}
+                                                </span>
+                                                ${item.category ? `<span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
+                                                    <i class="fas fa-tag mr-1"></i>${item.category}
+                                                </span>` : ''}
+                                                ${item.quantity ? `<span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
+                                                    <i class="fas fa-weight-hanging mr-1"></i>${item.quantity}
+                                                </span>` : ''}
+                                                ${item.barcode ? `<span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
+                                                    <i class="fas fa-barcode mr-1"></i>${item.barcode}
+                                                </span>` : ''}
+                                            </div>
+                                            <div class="mt-2 text-gray-500 text-sm">
+                                                <p><i class="far fa-calendar-plus mr-1"></i>Hinzugefügt: ${addedDateFormatted}</p>
+                                                <p><i class="far fa-calendar-check mr-1"></i>Ablaufdatum: ${expiryDateFormatted}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="delete-btn px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded-lg transition duration-200" data-id="${item.id}">
+                                        <i class="fas fa-trash mr-1"></i> Löschen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                itemsList.innerHTML = itemsHTML;
+                
+                // Add event listeners to delete buttons
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        deleteItem(id);
+                    });
+                });
+            }
+        }
+        
+        // Export data as JSON file
+        exportBtn.addEventListener('click', () => {
+            const itemsToExport = items.map(item => ({
+                ...item,
+                expiryDate: item.expiryDate.toISOString(),
+                addedDate: item.addedDate.toISOString()
+            }));
+            
+            const keydataToExport = keydataInputs
+                .map(el => String((el && el.value) ? el.value : '').slice(0, 60).trim())
+                .filter(v => v.length > 0);
+        
+            const exportObject = {
+                header: String((headerInput && headerInput.value) ? headerInput.value.slice(0, 40) : ''),
+                settings: {
+                    showip: Boolean(showipInput && showipInput.checked),
+                    showlastupdate: (showlastupdateInput ? Boolean(showlastupdateInput.checked) : true),
+                    weather: (weatherInput ? Boolean(weatherInput.checked) : true),
+                    weather_forecast: Boolean(weatherForecastInput && weatherForecastInput.checked),
+                    tablemode: (tablemodeInput && tablemodeInput.value) ? tablemodeInput.value : ''
+                },
+                keydata: keydataToExport,
+                note: String((noteInput && noteInput.value) ? noteInput.value : ''),
+                items: itemsToExport
+            };
+        
+            const dataStr = JSON.stringify(exportObject, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        
+            const exportFileDefaultName = `vorratsschrank-${new Date().toISOString().split('T')[0]}.json`;
+        
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        
+            showMessage('Daten wurden exportiert!', 'success');
+        });
+        
+        function showMessage(text, type) {
+            const existingMessage = document.querySelector('.message-toast');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            const message = document.createElement('div');
+            message.className = `message-toast fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 fade-in`;
+            
+            let bgColor = 'bg-blue-600';
+            if (type === 'error') bgColor = 'bg-red-600';
+            if (type === 'success') bgColor = 'bg-green-600';
+            if (type === 'info') bgColor = 'bg-blue-600';
+            
+            message.classList.add(bgColor, 'text-white');
+            message.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                    <span>${text}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.parentNode.removeChild(message);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // ========== EVENT LISTENERS ==========
+        
+        startScannerBtn.addEventListener('click', startScanner);
+        stopScannerBtn.addEventListener('click', stopScanner);
+        toggleCameraBtn.addEventListener('click', toggleCamera);
+        manualEntryBtn.addEventListener('click', handleManualEntry);
+        saveItemBtn.addEventListener('click', saveItem);
+        searchBarcodeBtn.addEventListener('click', searchBarcodeManually);
+        closeModalBtn.addEventListener('click', hideProductLookupModal);
+        
+        productLookupModal.addEventListener('click', (e) => {
+            if (e.target === productLookupModal) {
+                hideProductLookupModal();
+            }
+        });
+        
+        directBarcodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchBarcodeManually();
+            }
+        });
+        
+        searchInput.addEventListener('input', updateDisplay);
+        sortBy.addEventListener('change', updateDisplay);
+        
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            updateDisplay();
+        });
+        
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('bg-blue-100', 'text-blue-800'));
+                filterBtns.forEach(b => b.classList.add('bg-gray-100', 'text-gray-800'));
+                
+                btn.classList.remove('bg-gray-100', 'text-gray-800');
+                btn.classList.add('bg-blue-100', 'text-blue-800');
+                
+                updateDisplay();
+            });
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.target === productNameInput || e.target === expiryDateInput)) {
+                saveItemBtn.click();
+            }
+        });
+        
+        // Load items on startup
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Vorratsschrank Manager wird gestartet...');
+            setAddTab('product');
+            loadItems();
+            
+            // Show welcome message after a delay
+            setTimeout(() => {
+                if (items.length === 0) {
+                    showMessage('Willkommen! Füge deine ersten Produkte hinzu.', 'info');
+                }
+            }, 1500);
+        });
+        
+        let noteSaveTimer = null;
+
+        function scheduleNoteSave() {
+            if (noteSaveTimer) {
+                clearTimeout(noteSaveTimer);
+            }
+        
+            noteSaveTimer = setTimeout(async () => {
+                const result = await saveAllItems();
+                if (result.success) {
+                    showMessage('Einstellungen gespeichert.', 'success');
+                } else {
+                    showMessage('Einstellungen speichern fehlgeschlagen: ' + result.error, 'error');
+                }
+            }, 800);
+        }
+        
+        if (noteInput) {
+            noteInput.addEventListener('input', scheduleNoteSave);
+        }
+        if (headerInput) {
+            headerInput.addEventListener('input', scheduleNoteSave);
+        }
+        
+        if (showipInput) {
+            showipInput.addEventListener('change', scheduleNoteSave);
+        }
+        if (showlastupdateInput) {
+            showlastupdateInput.addEventListener('change', scheduleNoteSave);
+        }
+        if (weatherInput) {
+            weatherInput.addEventListener('change', scheduleNoteSave);
+        }
+        if (weatherForecastInput) {
+            weatherForecastInput.addEventListener('change', scheduleNoteSave);
+        }
+        if (tablemodeInput) {
+            tablemodeInput.addEventListener('change', scheduleNoteSave);
+        }
+        keydataInputs.forEach(el => {
+            if (el) el.addEventListener('input', scheduleNoteSave);
+        });
+        
+        if (addTabProduct) addTabProduct.addEventListener('click', () => setAddTab('product'));
+        if (addTabNote) addTabNote.addEventListener('click', () => setAddTab('note'));
+    </script>
+</body>
+</html>
