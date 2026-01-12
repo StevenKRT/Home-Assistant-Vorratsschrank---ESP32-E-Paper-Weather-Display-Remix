@@ -3,7 +3,7 @@ Dieses Projekt ist eine Abwandlung von [BliBluBlas digitalem Bilderrahmen](https
 
 ![Vorschau App](app-preview.png)
 
-In Home Assistant die configuration.yaml erweitern
+## In Home Assistant die configuration.yaml erweitern
 
 1. In Home Assistant im Profil unter "Sicherheit" > "Langlebige Zugriffstoken" einen neuen "Token erstellen".
 
