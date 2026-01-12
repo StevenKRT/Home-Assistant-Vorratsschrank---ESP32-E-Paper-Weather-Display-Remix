@@ -29,8 +29,10 @@ shell_command:
     && mv -f "$tmp" /config/www/vorratsschrank/data.json
     && true'
 ```
-
+## App Installieren
 4. Ausgehend vom Verzeichnis conf/homeassistant mit dem File Editor neue Verzeichnisse anlegen "/homeassistant/www/vorratsschrank/" und den Inhalt der app dort hochladen (index.html und data.json)
 5. In der index.html die Variablen "HA_BASE_URL" und "HA_TOKEN" anpassen an deine Home Assistant Umgebung
 6. Home Assistant neustarten
-7. Inhalt des displays laden und mit einem USB Kabel die Software auf den ESP laden. Dabei darauf achten die "conf.h" entsprechend anzupassen.
+
+## Software auf ESP laden
+8. Inhalt des displays laden und mit einem USB Kabel die Software auf den ESP laden. Dabei darauf achten die "conf.h" entsprechend anzupassen.
