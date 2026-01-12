@@ -1,6 +1,8 @@
 # Home-Assistant-Vorratsschrank-ESP32-E-Paper-Weather-Display-Remix
 Dieses Projekt ist eine Abwandlung von [BliBluBlas digitalem Bilderrahmen](https://github.com/bli-blu-bla/e-paper-display) um Inhalte des Vorratsschanks anzeigen zu lassen. Mit dieser Erweiterung können die Inhalte in Homeassitant gespeichert und von dort geladen und auf dem Display angezeigt werden. Es beinhaltet außerdem die Mini-"App" um dies verwalten znu können. Außerdem wurde openfoodfacts angebunden um schneller Daten erfassen zu können.
 
+![Vorschau App](app-preview.png)
+
 In Home Assistant die configuration.yaml erweitern
 
 1. In Home Assistant im Profil unter "Sicherheit" > "Langlebige Zugriffstoken" einen neuen "Token erstellen".
